@@ -4,8 +4,8 @@ This is a poc project for spring cloud security with oauth2 flow:
 * OAuth 2.0 Grant Type: Resource Owner Password Credentials
 
 ## OAuth 2.0 Grant Type: Authorization Code
-This flow is which will allow you to grant part of authority by your consent when you type in your username and password by yourself.
-project involve: spring-cloud-secure-ui and spring-cloud-secure-service
+This flow is which will allow you to grant part of authority by your consent when you type in your username and password by yourself.  
+**project involve** : spring-cloud-secure-ui, spring-cloud-secure-service
 
 ### Use Case
 When you want to grant some basic authorization to a 3rd party web/app without providing them your credential or single sign on to other app using your social media account(ex. facebook).
@@ -68,7 +68,7 @@ http://localhost:8080/premier
 ```
 
 ## Creating a Resource Server and Routing Tokens to Services
-We can build a resource server and let secure-ui call it by using the token get from github. 
+We can build a resource server (spring-cloud-secure-service) and let secure-ui call it by using the token get from github. 
 ### How Resource Server validate the token?
 We can configure resource userInforUri which they will make a call to that endpoint to make sure the token is valid.
 
