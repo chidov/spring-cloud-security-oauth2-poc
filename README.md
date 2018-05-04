@@ -32,7 +32,7 @@ public class SeurityConfig extends WebSecurityConfigurerAdapter {
 
 we will need to setup the oauth client config
 
-```
+```yaml
 security:
   oauth2:
     client:
@@ -72,9 +72,10 @@ We can build a resource server (spring-cloud-secure-service) and let secure-ui c
 ### How Resource Server validate the token?
 We can configure resource userInforUri which they will make a call to that endpoint to make sure the token is valid.
 
-```
+```properties
 #for resource server token lookup
 security.oauth2.resource.userInfoUri=https://api.github.com/user
+#use this when you want to validate with auth server
 #security.oauth2.resource.userInfoUri=http://localhost:8082/auth-service/user
 ```
 #### CURL command for resource server endpoint
