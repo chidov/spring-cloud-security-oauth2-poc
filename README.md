@@ -127,8 +127,8 @@ public class HomeController {
 ```
 
 ## OAuth 2.0 Grant Type: Resource Owner Password Credentials
-github doesn't support, so create our own auth server
-spring-cloud-secure-auth-server and spring-cloud-secure-service
+This flow is a little bit straight forward and you need to be trust that 3rd party application as you need to provide your credential in order to get the access token. Github doesn't support this feature, so we will create our own auth server.  
+**project involve** : spring-cloud-secure-auth-server and spring-cloud-secure-service
 
 ## Advance Token Option
 JdbcTokenStore
