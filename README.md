@@ -11,7 +11,9 @@ This flow is which will allow you to grant part of authority by your consent whe
 When you want to grant some basic authorization to a 3rd party web/app without providing them your credential or single sign on to other app using your social media account(ex. facebook).
 
 ### OAuth 2.0 Single Sign On
-The default spring cloud security will be basic auth, Spring Cloud OAuth 2.0 Single Sign On will make your page authenticate via 3rd party login (in this case we use github) easily by just using @EnableOAuth2Sso to turn on signle sign on
+The default spring cloud security will be basic auth, Spring Cloud OAuth 2.0 Single Sign On will make your page authenticate via 3rd party login (in this case we use github) easily by just using @EnableOAuth2Sso to turn on signle sign on.
+
+**@EnableOAuth2Sso**: marks your service as an OAuth 2.0 Client. This means that it will be responsible for redirecting Resource Owner (end user) to the Authorization Server where the user has to enter their credentials. After it's done the user is redirected back to the Client with Authorization Code (don't confuse with Access Code). Then the Client takes the Authorization Code and exchanges it for an Access Token by calling Authorization Server. Only after that, the Client can make a call to a Resource Server with Access Token.
 
 ```java
 @Configuration
