@@ -256,6 +256,17 @@ public class SecurityConfig extends GlobalMethodSecurityConfiguration {
     }
 }
 ```
+### Switch back to github authentication
+since I didn't specify scope github OAuth App, it didn't support the method access rule comment out these code in order to use github authentication for `spring-cloud-secure-ui` and `spring-cloud-secure-service`.
+
+```java
+    //@PreAuthorize("#oauth2.hasScope('food_read') and hasAuthority('ROLE_OPERATOR')")
+    
+    //@Bean
+    //public ResourceServerTokenServices myUserInfoTokenServices() {
+    //    return new CustomUserInfoTokenServices(sso.getUserInfoUri(), sso.getClientId());
+    //}
+```
 
 ## Communicate between resource server in microservice perspective
 In order to access resource server by token, we will need to request access token from the auth server. However we can talk between one resource server to the other one by using `OAuth2RestTemplate` which I have mention above. Let me detail about it in microservice perspective.
