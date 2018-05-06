@@ -1,4 +1,4 @@
-package com.egen.springcloudsecureoauthclient.controller;
+package com.egen.springcloudsecureoauthclient.client;
 
 /**
  * @author cdov
