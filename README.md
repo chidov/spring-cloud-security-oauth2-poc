@@ -15,7 +15,7 @@ The default spring cloud security will be basic auth, Spring Cloud OAuth 2.0 Sin
 
 **@EnableOAuth2Sso**: marks your service as an OAuth 2.0 Client. This means that it will be responsible for redirecting Resource Owner (end user) to the Authorization Server where the user has to enter their credentials. After it's done the user is redirected back to the Client with Authorization Code (don't confuse with Access Code). Then the Client takes the Authorization Code and exchanges it for an Access Token by calling Authorization Server. Only after that, the Client can make a call to a Resource Server with Access Token.
 
-Within **@EnableOAuth2Sso** we can see it contains **@EnableOauth2Client** is where your service becomes OAuth 2.0 Client. It makes it possible to forward access token (after it has been exchanged for Authorization Code) to downstream services in case you are calling those services via OAuth2RestTemplate. This annotation is used when you want to use OAuth2RestTemplate within call to service that use athorization code flow.
+Within **@EnableOAuth2Sso** we can see it contains **@EnableOauth2Client** is where your service becomes OAuth 2.0 Client. It makes it possible to forward access token (after it has been exchanged for Authorization Code) to downstream services in case you are calling those services via OAuth2RestTemplate. Base on [spring document](https://docs.spring.io/spring-security/oauth/apidocs/org/springframework/security/oauth2/config/annotation/web/configuration/EnableOAuth2Client.html), this annotation is used when you want to use OAuth2RestTemplate within call to service that use athorization code flow.
 
 ```java
 @Configuration
@@ -196,7 +196,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-**Note**: above configuration all using in memory method to store clientDetail and userDetail. We can store clientDetail in database with jdbc option `clients.jdbc(DataSource dataSource)` and also userDetail by custom userDetailService by implement `UserDetailService` interface and return it in the Bean.
+**Note**: above configuration all using in memory method to store clientDetail and userDetail. We can store clientDetail in database with [jdbc option](http://www.baeldung.com/spring-security-oauth-dynamic-client-registration) `clients.jdbc(DataSource dataSource)` and also userDetail by custom userDetailService by implement `UserDetailService` interface and return it in the Bean.
 
 #### Get Token Call
 Here's the call to get access_token by diffent grant type.
@@ -257,11 +257,45 @@ public class SecurityConfig extends GlobalMethodSecurityConfiguration {
 }
 ```
 
+## Communicate between resource server in microservice perspective
+In order to access resource server by token, we will need to request access token from the auth server. However we can talk between one resource server to the other one by using `OAuth2RestTemplate` which I have mention above. Let me detail about it in microservice perspective.
+
+We are going to use `spring-cloud-secure-service` and `spring-cloud-secure-oauth-client` as the example project:
+* `spring-cloud-secure-service` is the resource server which require `food_read` scope and `ROLE_OPERATOR` role in order to access the resource.
+* `spring-cloud-secure-oauth-client` is the resource server which just require a normal token authentication (no specific scope and role) in order to access the resource.
+
+### Problem of Re-use access token from resource server call
+As I mention above by using `OAuth2RestTemplate` Spring Clould OAuth will reuse the access token in `OAuthClientContext` for the rest client call. However if the scope of access token is not match with scope that required by the other server. for example `spring-cloud-secure-oauth-client` is authenticate with `ROLE_USER`, if we forward the access token to `spring-cloud-secure-service` in order to access `/foods`. We will get AccessDeniedException as it require role `ROLE_OPERATOR`.
+
+### Solution : allow microservice talk to each other with another specific client registration
+As you notice that in the authrozation server, I have different clients detail registration `egen` and `oauthclient` client_id.
+* **egen** is the client_id that required you to do whether password or authorization code authentication, everyone outsider who want to access resource server need to request token with this client_id.
+* **oauthclient** is the client_id specific for `spring-cloud-secure-oauth-client` that required only client_credentials to authenticate, which specific to the traffic within the call between microservice. it has the valid role in order to access to `spring-cloud-secure-service` and other microservice if needed in the future by adding more scope and role to it.
+
+In conclusion, all calls from unknown user will require a strict authentication go through egen client_id and a specific microservice call will go throught their specific client_id which have appropriate scope and role. 
+
+### How Spring OAuth handle that?
+First, `OAuth2RestTemplate` will forward the acccess token to make call to other service. If they failed with some exceptions. ex.AccessDeniedException. It will try to request for a new access token by using the information from the `OAuth2ProtectedResourceDetails` and make call again.
+
+We can specify the `OAuth2ProtectedResourceDetails` in application.yml:
+```yaml
+security:
+  oauth2:
+    client:
+      clientId: oauthclient
+      clientSecret: oauthclient-secret
+      accessTokenUri: http://localhost:8082/auth-service/oauth/token
+      grant-type: client_credentials
+      scope: food_read
+    resource:
+      userInfoUri: http://localhost:8082/auth-service/user
+```
+so once the token from `egen` client_id failed, it will get a new one by using `oauthclient` client_id details. 
+
 ## Advance Token Option
-JdbcTokenStore
-JWT
+In this POC, I use default inMemoryTokenStore for the token storage. We can using [JdbcTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/spring-security-oauth-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfig.java) and [JWTTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/spring-security-oauth-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfigJwt.java), which JWT invovle some token encryption and signature that secure the token.
 
 
 ## Reference 
-
-http://cloud.spring.io/spring-cloud-security/single/spring-cloud-security.html#_oauth2_single_sign_on
+http://cloud.spring.io/spring-cloud-security/single/spring-cloud-security.html#_oauth2_single_sign_on  
+https://spring.io/blog/2017/09/15/security-changes-in-spring-boot-2-0-m4
