@@ -135,3 +135,8 @@ This flow is a little bit straight forward and you need to be trust that 3rd par
 ## Advance Token Option
 JdbcTokenStore
 JWT
+
+
+## Reference 
+
+http://cloud.spring.io/spring-cloud-security/single/spring-cloud-security.html#_oauth2_single_sign_on
