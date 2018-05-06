@@ -1,0 +1,14 @@
+security:
+  oauth2:
+    client:
+      clientId: oauthclient
+      clientSecret: oauthclient-secret
+      accessTokenUri: http://localhost:8082/auth-service/oauth/token
+      grant-type: client_credentials
+      scope: food_read
+    resource:
+      userInfoUri: http://localhost:8082/auth-service/user
+server:
+  servlet:
+    context-path: /client
+  port: 8084
