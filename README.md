@@ -15,6 +15,8 @@ The default spring cloud security will be basic auth, Spring Cloud OAuth 2.0 Sin
 
 **@EnableOAuth2Sso**: marks your service as an OAuth 2.0 Client. This means that it will be responsible for redirecting Resource Owner (end user) to the Authorization Server where the user has to enter their credentials. After it's done the user is redirected back to the Client with Authorization Code (don't confuse with Access Code). Then the Client takes the Authorization Code and exchanges it for an Access Token by calling Authorization Server. Only after that, the Client can make a call to a Resource Server with Access Token.
 
+Within **@EnableOAuth2Sso** we can see it contains **@EnableOauth2Client** is where your service becomes OAuth 2.0 Client. It makes it possible to forward access token (after it has been exchanged for Authorization Code) to downstream services in case you are calling those services via OAuth2RestTemplate. This annotation is used when you want to use OAuth2RestTemplate within call to service that use athorization code flow.
+
 ```java
 @Configuration
 @EnableOAuth2Sso
@@ -131,6 +133,129 @@ public class HomeController {
 ## OAuth 2.0 Grant Type: Resource Owner Password Credentials
 This flow is a little bit straight forward and you need to be trust that 3rd party application as you need to provide your credential in order to get the access token. Github doesn't support this feature, so we will create our own auth server.  
 **project involve** : spring-cloud-secure-auth-server and spring-cloud-secure-service
+
+### How to create authorization server?
+**@EnableAuthorizationServer** will enable your server become Authorization Server, and you can also register your client service with different clientDetail.
+
+```java
+@EnableAuthorizationServer
+@Configuration
+public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
+    private final AuthenticationManager authenticationManager;
+
+    @Autowired
+    public AuthServerConfig(AuthenticationManager authenticationManager) {
+        this.authenticationManager = authenticationManager;
+    }
+
+    @Override
+    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+        clients.inMemory()
+                .withClient("egen")
+                .secret("{noop}egensecret")
+                .authorizedGrantTypes("authorization_code","refresh_token","password")
+                .scopes("food_read","food_write")
+            .and()
+                .withClient("oauthclient")
+                .secret("{noop}oauthclient-secret")
+                .authorizedGrantTypes("client_credentials", "refresh_token")
+                .authorities("ROLE_USER", "ROLE_OPERATOR")
+                .scopes("food_read");
+    }
+
+    @Override
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+        endpoints.
+                authenticationManager(authenticationManager);
+    }
+
+    @Override
+    public void configure(final AuthorizationServerSecurityConfigurer oauthServer) throws Exception {
+        oauthServer.tokenKeyAccess("permitAll()").checkTokenAccess("isAuthenticated()");
+    }
+}
+
+@Configuration
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    @Bean
+    public UserDetailsService userDetailsService() {
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        manager.createUser(User.withUsername("user").password("{noop}password").roles("USER").build());
+        manager.createUser(User.withUsername("ops").password("{noop}password").roles("USER", "OPERATOR").build());
+        return manager;
+    }
+
+    @Override
+    @Bean
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
+
+}
+```
+
+**Note**: above configuration all using in memory method to store clientDetail and userDetail. We can store clientDetail in database with jdbc option `clients.jdbc(DataSource dataSource)` and also userDetail by custom userDetailService by implement `UserDetailService` interface and return it in the Bean.
+
+#### Get Token Call
+Here's the call to get access_token by diffent grant type.
+```bash
+# password grant type
+$ curl -X POST \
+  http://localhost:8082/auth-service/oauth/token \
+  -H 'Authorization: Basic ZWdlbjplZ2Vuc2VjcmV0' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'client_id=egen&grant_type=password&username=user&password=password&scope=food_read'
+  
+# client_credential grant type
+$ curl -X POST \
+  http://localhost:8082/auth-service/oauth/token \
+  -H 'Authorization: Basic b2F1dGhjbGllbnQ6b2F1dGhjbGllbnQtc2VjcmV0' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'client_id=oauthclient&grant_type=client_credentials'
+```
+
+### Switch service to use custom auth server
+Here is how to change service auth server from github to custom one, and we can use Resource Owner Password Credentials to retrieve token from auth server and access to the resource server. 
+```properties
+#for resource server token lookup
+security.oauth2.resource.userInfoUri=http://localhost:8082/auth-service/user
+```
+
+### Method Access Rule
+We can limit the method access rule by using `@PreAuthorize` which use `SpEL` to setup access rule, we will limit method access base on scope and role:
+```java
+@RequestMapping("/foods")
+@PreAuthorize("#oauth2.hasScope('food_read') and hasAuthority('ROLE_OPERATOR')")
+public List<Food> getFoodData() {
+...
+}
+```
+This means only token have scope `food_read` and role `ROLE_OPERATOR` can access this method. we can acheive that by `@EnableGlobalMethodSecurity(prePostEnabled = true)` and custom `ResourceServerTokenServices` which will retrieve scope and role from the userInfo endpoint. Here is the configuration:
+```java
+@Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig extends GlobalMethodSecurityConfiguration {
+
+    private final ResourceServerProperties sso;
+
+    @Autowired
+    public SecurityConfig(ResourceServerProperties sso) {
+        this.sso = sso;
+    }
+    @Bean
+    public ResourceServerTokenServices myUserInfoTokenServices() {
+        return new CustomUserInfoTokenServices(sso.getUserInfoUri(), sso.getClientId());
+    }
+    @Override
+    protected MethodSecurityExpressionHandler createExpressionHandler() {
+        return new OAuth2MethodSecurityExpressionHandler();
+    }
+}
+```
 
 ## Advance Token Option
 JdbcTokenStore
