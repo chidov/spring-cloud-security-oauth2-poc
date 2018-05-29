@@ -304,7 +304,7 @@ security:
 so once the token from `egen` client_id failed, it will get a new one by using `oauthclient` client_id details. 
 
 ## Advance Token Option
-In this POC, I use default inMemoryTokenStore for the token storage. We can using [JdbcTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/spring-security-oauth-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfig.java) and [JWTTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/spring-security-oauth-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfigJwt.java) and [spring-oauth-jwt](http://www.baeldung.com/spring-security-oauth-jwt), which JWT invovle some token encryption and signature that secure the token.
+In this POC, I use default inMemoryTokenStore for the token storage. We can using [JdbcTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/oauth-authorization-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfig.java) and [JWTTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/oauth-authorization-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfigJwt.java) and [spring-oauth-jwt](http://www.baeldung.com/spring-security-oauth-jwt), which JWT invovle some token encryption and signature that secure the token.
 
 
 ## Reference 
