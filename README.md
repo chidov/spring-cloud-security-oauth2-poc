@@ -74,6 +74,14 @@ http://localhost:8080/premier
 ## Creating a Resource Server and Routing Tokens to Services
 We can build a resource server (spring-cloud-secure-service) and let secure-ui call it by using the token get from github. 
 ### How Resource Server validate the token?
+There are 2 ways we can do validate the token:
+#### TokenServices 
+We can configure token service by extends `ResourceServerConfigurerAdapter` which assign tokenServices to validate the token, we can use it to validate 3 type of tokenStore:
+* `RemoteTokenServices` : remote to [checkTokenEndpoint](https://docs.spring.io/spring-security/oauth/apidocs/org/springframework/security/oauth2/provider/endpoint/CheckTokenEndpoint.html) of spring cloud oauth2 (authentication server) to validate the token.
+* `DefaultTokenServices` with `JwtTokenStore` : validate token via JWT verification.
+* `DefaultTokenServices` with `JdbcTokenStore` : connect to database via jdbc datasource to validate token.
+
+#### User Info Property
 We can configure resource userInforUri which they will make a call to that endpoint to make sure the token is valid.
 
 ```properties
