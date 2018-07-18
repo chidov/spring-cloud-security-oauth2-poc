@@ -12,3 +12,5 @@ server:
   servlet:
     context-path: /client
   port: 8084
+
+food.ribbon.listOfServers: localhost:8081/service
