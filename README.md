@@ -306,6 +306,23 @@ so once the token from `egen` client_id failed, it will get a new one by using `
 ## Advance Token Option
 In this POC, I use default inMemoryTokenStore for the token storage. We can using [JdbcTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/spring-security-oauth-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfig.java) and [JWTTokenStore](https://github.com/Baeldung/spring-security-oauth/blob/master/spring-security-oauth-server/src/main/java/org/baeldung/config/OAuth2AuthorizationServerConfigJwt.java) and [spring-oauth-jwt](http://www.baeldung.com/spring-security-oauth-jwt), which JWT invovle some token encryption and signature that secure the token.
 
+### JWT Payload Sample
+If we want to generate your own jwt without using spring oauth, here is the sameple payload which include role and scope:
+```
+{
+  "scope": [
+    "food_read"
+  ],
+  "organization": "oauthclient",
+  "exp": 1542033343,
+  "authorities": [
+    "ROLE_OPERATOR",
+    "ROLE_USER"
+  ],
+  "jti": "0ca6059b-ddae-41ec-8f71-4cd78cc1c3e5",
+  "client_id": "oauthclient"
+}
+```
 
 ## Reference 
 http://cloud.spring.io/spring-cloud-security/single/spring-cloud-security.html#_oauth2_single_sign_on  
